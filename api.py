@@ -115,20 +115,34 @@ def estadisticas(agrupar_por: str, sumar: str):
 # ==== CREAR ================================================================
 # 👈 CAMBIA estos campos por los de TU coleccion (mismos nombres y tipos).
 class NuevoRegistro(BaseModel):
-    sucursal: str
-    producto: str
-    cantidad: int
-    total: int
-    medio_pago: str
+    planeta: str
+    estrella: Optional[str] = None
+    metodo_descubrimiento: Optional[str] = None
+    anio_descubrimiento: Optional[int] = None
+    lugar_descubrimiento: Optional[str] = None
+    radio_tierras: Optional[float] = None
+    insolacion_tierra: Optional[float] = None
+    distancia_sistema_parsec: Optional[float] = None
+    temperatura_planeta_k: Optional[float] = None
+    periodo_orbital_dias: Optional[float] = None
+    masa_tierras: Optional[float] = None
+    densidad_planeta: Optional[float] = None
 
     model_config = {
         "json_schema_extra": {
             "example": {
-                "sucursal": "Norte",
-                "producto": "Cafe",
-                "cantidad": 2,
-                "total": 15000,
-                "medio_pago": "Tarjeta",
+                "planeta": "Planeta Prueba b",
+                "estrella": "Estrella Prueba",
+                "metodo_descubrimiento": "Transit",
+                "anio_descubrimiento": 2026,
+                "lugar_descubrimiento": "Space",
+                "radio_tierras": 1.1,
+                "insolacion_tierra": 0.9,
+                "distancia_sistema_parsec": 25.4,
+                "temperatura_planeta_k": 260.0,
+                "periodo_orbital_dias": 40.5,
+                "masa_tierras": 1.4,
+                "densidad_planeta": 5.2,
             }
         }
     }
