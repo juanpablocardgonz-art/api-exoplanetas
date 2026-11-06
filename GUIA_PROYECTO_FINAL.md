@@ -137,16 +137,23 @@ Abre **http://localhost:8000/docs** y prueba cada endpoint sin escribir código.
 
 ## Fase 4 — El frontend (dashboard con Streamlit)
 
-En `dashboard.py`, revisa que la variable `API` apunte a tu backend:
+El dashboard usa por defecto la API pública:
 ```python
-API = "http://localhost:8000"   # local
+https://api-exoplanetas.onrender.com
+```
+Si vas a probar una API local, configura `API_URL` antes de iniciar Streamlit
+(PowerShell):
+```powershell
+$env:API_URL = "http://localhost:8000"
 ```
 Levanta el dashboard en **otra** terminal (con `(venv)` y la API corriendo):
 ```bash
 python -m streamlit run dashboard.py
 ```
-Se abre en http://localhost:8501. Debe **listar tus datos, filtrarlos, graficar
-estadísticas y permitir agregar un registro** (que viaja por `POST` a la API).
+Se abre en http://localhost:8501. Permite buscar y filtrar planetas, explorar
+gráficos y fichas, descargar resultados en CSV, agregar registros y consultar
+la IA. La IA usa estadísticas calculadas sobre toda la colección, además de
+una pequeña muestra para responder preguntas sobre el catálogo.
 
 Con esto tienes el ciclo completo funcionando:
 **dashboard ↔ API ↔ MongoDB**.
