@@ -14,7 +14,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-API = "http://localhost:8000"
+API = "https://api-exoplanetas.onrender.com"
 
 st.set_page_config(page_title="Proyecto Final", page_icon="📊", layout="wide")
 st.title("📊 Dashboard del Proyecto Final")
