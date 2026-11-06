@@ -34,9 +34,11 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # 1. CONFIGURACION   👈 AJUSTA ESTOS NOMBRES A TU PROYECTO
 # ---------------------------------------------------------------------------
+import requests  # === NUEVO (IA): para llamar a la API del modelo ===
 NOMBRE_BD = "proyecto_segundo_corte"            # 👈 tu base de datos en Atlas
 NOMBRE_COLECCION = "exoplanetas_limpios"   # 👈 tu coleccion con los datos ya limpios
-
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+MODELO_IA = "gemini-3.5-flash-lite"
 # ---------------------------------------------------------------------------
 # 2. CONEXION A MONGODB (segura: la clave viene de una variable de entorno)
 # ---------------------------------------------------------------------------
@@ -76,12 +78,14 @@ def inicio():
 
 # ==== LEER =================================================================
 @app.get("/datos")
-def listar(campo: Optional[str] = None, valor: Optional[str] = None, limite: int = 20):
+def listar(campo: Optional[str] = None, valor: Optional[str] = None, limite: int = 0):
     """Lista documentos. Opcionalmente filtra por un campo = valor.
 
     Ejemplos:
         /datos?limite=50
         /datos?campo=sucursal&valor=Norte
+
+    Con limite=0 (valor predeterminado), devuelve todos los documentos.
     """
     filtro = {campo: valor} if campo and valor else {}
     documentos = [_a_json(d) for d in coleccion.find(filtro).limit(limite)]
@@ -154,3 +158,66 @@ def crear(registro: NuevoRegistro):
     doc = registro.model_dump()
     resultado = coleccion.insert_one(doc)
     return {"mensaje": "Registro creado", "id": str(resultado.inserted_id)}
+
+# === NUEVO (IA): preguntar a los datos en lenguaje natural =================
+class Pregunta(BaseModel):
+    pregunta: str
+ 
+    model_config = {
+        "json_schema_extra": {
+            "example": {"pregunta": "¿Cuál sucursal vendió más?"}
+        }
+    }
+ 
+ 
+@app.post("/preguntar")
+def preguntar(p: Pregunta):
+    """Responde una pregunta en lenguaje natural usando los datos de la coleccion."""
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=503, detail="Falta la GEMINI_API_KEY.")
+ 
+    # 1. Una muestra de los datos como contexto para la IA
+    muestra = [_a_json(d) for d in coleccion.find().limit(30)]
+ 
+    # 2. El prompt: instrucciones + datos + pregunta
+    prompt = (
+        "Eres un asistente que responde preguntas sobre estos datos. "
+        "Responde en español, breve y claro. Si la respuesta no está en los datos, dilo.\n\n"
+        f"DATOS (muestra):\n{muestra}\n\nPREGUNTA: {p.pregunta}"
+    )
+ 
+    # 3. Llamamos a la API del modelo (¡es otra API REST!)
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{MODELO_IA}:generateContent"
+    )
+    try:
+        r = requests.post(
+            url,
+            headers={"x-goog-api-key": GEMINI_API_KEY},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+            timeout=30,
+        )
+        r.raise_for_status()
+        data = r.json()
+        respuesta = data["candidates"][0]["content"]["parts"][0]["text"]
+    except requests.HTTPError as e:
+        status = e.response.status_code if e.response is not None else "desconocido"
+        detail = e.response.text[:1000] if e.response is not None else str(e)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Error del modelo (HTTP {status}): {detail}",
+        ) from e
+    except requests.RequestException as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"No fue posible conectar con el modelo: {e}",
+        ) from e
+    except (ValueError, KeyError, IndexError, TypeError) as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Respuesta inesperada del modelo: {e}",
+        ) from e
+
+    return {"respuesta": respuesta}
+# === FIN NUEVO (IA) ========================================================

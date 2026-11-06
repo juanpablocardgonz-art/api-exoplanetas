@@ -14,7 +14,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-API = "https://api-exoplanetas.onrender.com"  # 👈 si despliegas la API en la nube, cambia esta URL
+API = "http://localhost:8000"
 
 st.set_page_config(page_title="Proyecto Final", page_icon="📊", layout="wide")
 st.title("📊 Dashboard del Proyecto Final")
@@ -22,7 +22,7 @@ st.title("📊 Dashboard del Proyecto Final")
 
 # --- Funciones que hablan con la API ---------------------------------------
 @st.cache_data(ttl=30)
-def listar(campo=None, valor=None, limite=200):
+def listar(campo=None, valor=None, limite=0):
     params = {"limite": limite}
     if campo and valor:
         params.update({"campo": campo, "valor": valor})
@@ -92,27 +92,60 @@ st.subheader("Datos")
 st.dataframe(df, use_container_width=True)
 
 # --- Agregar un registro (POST a la API) -----------------------------------
-# 👈 CAMBIA estos campos por los de TU coleccion (mismos nombres que en la API).
-st.subheader("➕ Agregar registro")
+st.subheader("➕ Agregar planeta")
 with st.form("nuevo"):
-    sucursal = st.text_input("sucursal")
-    producto = st.text_input("producto")
-    cantidad = st.number_input("cantidad", min_value=0, step=1)
-    total = st.number_input("total", min_value=0, step=1000)
-    medio_pago = st.text_input("medio_pago")
+    planeta = st.text_input("Nombre del planeta *")
+    estrella = st.text_input("Estrella")
+    metodo_descubrimiento = st.selectbox(
+        "Método de descubrimiento",
+        ["Transit", "Radial Velocity", "Microlensing", "Imaging",
+         "Transit Timing Variations", "Eclipse Timing Variations",
+         "Pulsar Timing", "Orbital Brightness Modulation", "Astrometry"],
+    )
+    lugar_descubrimiento = st.selectbox("Lugar de descubrimiento", ["Ground", "Space"])
+    anio_descubrimiento = st.number_input("Año de descubrimiento", min_value=1989, max_value=2100, value=None, step=1)
+    radio_tierras = st.number_input("Radio (Tierras)", min_value=0.0, value=None)
+    insolacion_tierra = st.number_input("Insolación (Tierra = 1)", min_value=0.0, value=None)
+    distancia_sistema_parsec = st.number_input("Distancia (parsec)", min_value=0.0, value=None)
+    temperatura_planeta_k = st.number_input("Temperatura (K)", min_value=0.0, value=None)
+    periodo_orbital_dias = st.number_input("Periodo orbital (días)", min_value=0.0, value=None)
+    masa_tierras = st.number_input("Masa (Tierras)", min_value=0.0, value=None)
+    densidad_planeta = st.number_input("Densidad (g/cm³)", min_value=0.0, value=None)
     enviar = st.form_submit_button("Guardar")
 
 if enviar:
-    payload = {
-        "sucursal": sucursal,
-        "producto": producto,
-        "cantidad": int(cantidad),
-        "total": int(total),
-        "medio_pago": medio_pago,
-    }
-    r = requests.post(f"{API}/datos", json=payload, timeout=10)
-    if r.ok:
-        st.success(f"Guardado con id {r.json()['id']}")
-        st.cache_data.clear()  # refresca la tabla
+    if not planeta.strip():
+        st.error("El nombre del planeta es obligatorio.")
     else:
-        st.error(f"Error de la API: {r.text}")
+        payload = {
+            "planeta": planeta.strip(),
+            "estrella": estrella.strip() or None,
+            "metodo_descubrimiento": metodo_descubrimiento,
+            "lugar_descubrimiento": lugar_descubrimiento,
+            "anio_descubrimiento": int(anio_descubrimiento) if anio_descubrimiento else None,
+            "radio_tierras": radio_tierras,
+            "insolacion_tierra": insolacion_tierra,
+            "distancia_sistema_parsec": distancia_sistema_parsec,
+            "temperatura_planeta_k": temperatura_planeta_k,
+            "periodo_orbital_dias": periodo_orbital_dias,
+            "masa_tierras": masa_tierras,
+            "densidad_planeta": densidad_planeta,
+        }
+        r = requests.post(f"{API}/datos", json=payload, timeout=10)
+        if r.ok:
+            st.success(f"Guardado con id {r.json()['id']}")
+            st.cache_data.clear()  # refresca la tabla
+        else:
+            st.error(f"Error de la API: {r.text}")
+
+# === NUEVO (IA): pregúntale a tus datos ====================================
+st.subheader("🤖 Pregúntale a tus datos")
+pregunta = st.text_input("Escribe tu pregunta (ej. ¿cuál sucursal vendió más?)")
+if st.button("Preguntar") and pregunta:
+    with st.spinner("Pensando..."):
+        r = requests.post(f"{API}/preguntar", json={"pregunta": pregunta}, timeout=120)
+    if r.ok:
+        st.success(r.json()["respuesta"])
+    else:
+        st.error(f"Error: {r.text}")
+# === FIN NUEVO (IA) ========================================================

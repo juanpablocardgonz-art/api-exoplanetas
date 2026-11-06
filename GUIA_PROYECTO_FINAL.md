@@ -119,7 +119,7 @@ La API ya trae tres endpoints:
 
 | Método | Endpoint | Qué hace |
 |---|---|---|
-| GET | `/datos` | Lista documentos; filtra con `?campo=...&valor=...&limite=...` |
+| GET | `/datos` | Lista todos los documentos por defecto; filtra con `?campo=...&valor=...` y permite limitar con `?limite=...` |
 | GET | `/estadisticas` | Agrupa y suma: `?agrupar_por=sucursal&sumar=total` |
 | POST | `/datos` | Crea un documento nuevo (valida con Pydantic) |
 
